@@ -11,26 +11,40 @@
 #define I2C_NUM I2C_NUM_0
 #define I2C_FREQ_HZ 400000 // 400kHz I2C frequency
 
-MPU6500 IMU;         // MPU6500 instance
+mpu6500 IMU;         // MPU6500 instance
 calData calib = {0}; // Calibration data
 AccelData accelData; // Accelerometer data
 GyroData gyroData;   // Gyroscope data
 
+static const char *TAG = "MPU-6500";
+
 // Function prototypes
-void imu_setup();
-void imu_loop();
+// Function prototypes
+esp_err_t mpu6500_setup();
+void mpu6500_loop();
 
 void app_main()
 {
-    imu_setup();
+    // Initialize MPU-6500
+    esp_err_t ret_mpu = mpu6500_setup();
+    if (ret_mpu != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to initialize MPU-6500: %d", ret_mpu);
+        return;
+    }
+    ESP_LOGI(TAG, "MPU-6500 initialized successfully");
+
+    // Sensor Tasks
+    xTaskCreate(mpu6500_loop, "mpu6500_loop", 4096, NULL, 5, NULL);
+
+    // Infinite loop delay
     while (1)
     {
-        imu_loop();
-        vTaskDelay(pdMS_TO_TICKS(300)); // Delay for 150ms
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
-void imu_setup()
+esp_err_t mpu6500_setup()
 {
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
@@ -42,45 +56,37 @@ void imu_setup()
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM, &i2c_config));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM, I2C_MODE_MASTER, 0, 0, 0));
 
-    ESP_LOGI("IMU", "Starting IMU setup");
+    ESP_LOGI(TAG, "Starting MPU-6500 setup");
 
-    int err = MPU6500_init(&IMU, &calib, IMU_ADDRESS);
+    int err = mpu6500_init(&IMU, &calib, IMU_ADDRESS);
     if (err != 0)
-    {
-        ESP_LOGE("IMU", "Error initializing IMU: %d", err);
-        while (true)
-        {
-            vTaskDelay(portMAX_DELAY); // Infinite loop
-        }
-    }
+        return ESP_FAIL;
 
+    ESP_LOGI(TAG, "Keep level.");
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
 
-    ESP_LOGI("IMU", "Keep IMU level.");
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    mpu6500_calibrateAccelGyro(&IMU, &calib);
+    ESP_LOGI(TAG, "Calibration done!");
 
-    MPU6500_calibrateAccelGyro(&IMU, &calib);
-    ESP_LOGI("IMU", "Calibration done!");
+    mpu6500_init(&IMU, &calib, IMU_ADDRESS);
 
-    ESP_LOGI("IMU", "Accel biases X/Y/Z: ");
-    ESP_LOGI("IMU", "%f, %f, %f", calib.accelBias[0], calib.accelBias[1], calib.accelBias[2]);
-
-    ESP_LOGI("IMU", "Gyro biases X/Y/Z: ");
-    ESP_LOGI("IMU", "%f, %f, %f", calib.gyroBias[0], calib.gyroBias[1], calib.gyroBias[2]);
-
-    ESP_LOGI("IMU", "Calib valid: %d", calib.valid);
-
-    MPU6500_init(&IMU, &calib, IMU_ADDRESS);
+    return ESP_OK;
 }
 
-void imu_loop()
+void mpu6500_loop(void *pvParameters)
 {
-    MPU6500_update(&IMU);
-    
-    /*
-    MPU6500_getAccel(&IMU, &accelData);
-    ESP_LOGI("IMU", "Accel - x:%.0f y:%.0f z:%.0f", accelData.accelX, accelData.accelY, accelData.accelZ - 1);
-    */
+    while (1)
+    {
+        mpu6500_update(&IMU);
 
-    MPU6500_getGyro(&IMU, &gyroData);
-    ESP_LOGI("IMU", "Gyro - x:%.1f y:%.1f z:%.1f", gyroData.gyroX, gyroData.gyroY, gyroData.gyroZ);
+        /*
+        mpu6500_getAccel(&IMU, &accelData);
+        ESP_LOGI(TAG, "Accel - x:%.0f y:%.0f z:%.0f", accelData.accelX, accelData.accelY, accelData.accelZ - 1);
+        */
+
+        mpu6500_getGyro(&IMU, &gyroData);
+        ESP_LOGI(TAG, "Gyro - x:%.1f y:%.1f z:%.1f", gyroData.gyroX, gyroData.gyroY, gyroData.gyroZ);
+
+        vTaskDelay(300 / portTICK_PERIOD_MS);
+    }
 }

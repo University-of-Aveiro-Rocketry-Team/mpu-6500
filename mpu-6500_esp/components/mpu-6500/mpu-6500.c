@@ -4,9 +4,8 @@
 #include <string.h>
 #include "freertos/task.h"
 
-// Assuming you have defined I2C port number, SDA, SCL pins, and I2C address in MPU6500.h
 
-int MPU6500_init(MPU6500 *device, calData *cal, uint8_t address)
+int mpu6500_init(mpu6500 *device, calData *cal, uint8_t address)
 {
     // Initialize address variable and calibration data
     device->IMUAddress = address;
@@ -95,7 +94,7 @@ int MPU6500_init(MPU6500 *device, calData *cal, uint8_t address)
     return 0;
 }
 
-void MPU6500_update(MPU6500 *device)
+void mpu6500_update(mpu6500 *device)
 {
     if (!dataAvailable(device))
         return;
@@ -194,16 +193,16 @@ void MPU6500_update(MPU6500 *device)
     }
 }
 
-void MPU6500_getAccel(MPU6500 *device, AccelData *out)
+void mpu6500_getAccel(mpu6500 *device, AccelData *out)
 {
     memcpy(out, &(device->accel), sizeof(device->accel));
 }
-void MPU6500_getGyro(MPU6500 *device, GyroData *out)
+void mpu6500_getGyro(mpu6500 *device, GyroData *out)
 {
     memcpy(out, &(device->gyro), sizeof(device->gyro));
 }
 
-int MPU6500_setAccelRange(MPU6500 *device, int range)
+int mpu6500_setAccelRange(mpu6500 *device, int range)
 {
     uint8_t c;
     if (range == 16)
@@ -234,7 +233,7 @@ int MPU6500_setAccelRange(MPU6500 *device, int range)
     return 0;
 }
 
-int MPU6500_setGyroRange(MPU6500 *device, int range)
+int mpu6500_setGyroRange(mpu6500 *device, int range)
 {
     uint8_t c;
     if (range == 2000)
@@ -265,7 +264,7 @@ int MPU6500_setGyroRange(MPU6500 *device, int range)
     return 0;
 }
 
-void MPU6500_calibrateAccelGyro(MPU6500 *device, calData *cal)
+void mpu6500_calibrateAccelGyro(mpu6500 *device, calData *cal)
 {
     uint8_t data[12]; // data array to hold accelerometer and gyro x, y, z, data
     uint16_t ii, packet_count, fifo_count;
@@ -449,4 +448,4 @@ void readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t *dest
     }
 }
 
-bool dataAvailable(MPU6500 *device) { return (readByte(device->IMUAddress, MPU6500_INT_STATUS) & 0x01); }
+bool dataAvailable(mpu6500 *device) { return (readByte(device->IMUAddress, MPU6500_INT_STATUS) & 0x01); }

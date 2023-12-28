@@ -6,28 +6,12 @@ extern "C"
 {
 #endif
 
-// Include necessary headers for Espressif IDF
 #include "driver/i2c.h"
 #include "esp_log.h"
 
-    /*
-
-        MPU6500 REGISTERS
-
-    */
     #define MPU6500_SELF_TEST_X_GYRO 0x00
     #define MPU6500_SELF_TEST_Y_GYRO 0x01
     #define MPU6500_SELF_TEST_Z_GYRO 0x02
-
-        // #define MPU6500_X_FINE_GAIN      0x03 // [7:0] fine gain
-        // #define MPU6500_Y_FINE_GAIN      0x04
-        // #define MPU6500_Z_FINE_GAIN      0x05
-        // #define MPU6500_XA_OFFSET_H      0x06 // User-defined trim values for accelerometer
-        // #define MPU6500_XA_OFFSET_L_TC   0x07
-        // #define MPU6500_YA_OFFSET_H      0x08
-        // #define MPU6500_YA_OFFSET_L_TC   0x09
-        // #define MPU6500_ZA_OFFSET_H      0x0A
-        // #define MPU6500_ZA_OFFSET_L_TC   0x0B
 
     #define MPU6500_SELF_TEST_X_ACCEL 0x0D
     #define MPU6500_SELF_TEST_Y_ACCEL 0x0E
@@ -177,23 +161,23 @@ extern "C"
         GyroData gyro;
         calData calibration;
         uint8_t IMUAddress;
-    } MPU6500;
+    } mpu6500;
 
     // Function prototypes
-    int MPU6500_init(MPU6500 *device, calData *cal, uint8_t address);
-    void MPU6500_update(MPU6500 *device);
-    void MPU6500_getAccel(MPU6500 *device, AccelData *out);
-    void MPU6500_getGyro(MPU6500 *device, GyroData *out);
-    int MPU6500_setGyroRange(MPU6500 *device, int range);
-    int MPU6500_setAccelRange(MPU6500 *device, int range);
-    void MPU6500_calibrateAccelGyro(MPU6500 *device, calData *cal);
+    int mpu6500_init(mpu6500 *device, calData *cal, uint8_t address);
+    void mpu6500_update(mpu6500 *device);
+    void mpu6500_getAccel(mpu6500 *device, AccelData *out);
+    void mpu6500_getGyro(mpu6500 *device, GyroData *out);
+    int mpu6500_setGyroRange(mpu6500 *device, int range);
+    int mpu6500_setAccelRange(mpu6500 *device, int range);
+    void mpu6500_calibrateAccelGyro(mpu6500 *device, calData *cal);
 
     // I2C communication functions adapted for ESP-IDF
     void writeByte(uint8_t address, uint8_t subAddress, uint8_t data);
     uint8_t readByte(uint8_t address, uint8_t subAddress);
     void readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t *dest);
 
-    bool dataAvailable(MPU6500 *device);
+    bool dataAvailable(mpu6500 *device);
 
 #ifdef __cplusplus
 }
