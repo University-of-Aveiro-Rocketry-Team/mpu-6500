@@ -75,18 +75,41 @@ esp_err_t mpu6500_setup()
 
 void mpu6500_loop(void *pvParameters)
 {
+    float accumulatedGyroX = 0, accumulatedGyroY = 0, accumulatedGyroZ = 0;
+    int sampleCount = 0;
+
     while (1)
     {
         mpu6500_update(&IMU);
+        mpu6500_getGyro(&IMU, &gyroData);
 
         /*
         mpu6500_getAccel(&IMU, &accelData);
         ESP_LOGI(TAG, "Accel - x:%.0f y:%.0f z:%.0f", accelData.accelX, accelData.accelY, accelData.accelZ - 1);
         */
 
-        mpu6500_getGyro(&IMU, &gyroData);
-        ESP_LOGI(TAG, "Gyro - x:%.1f y:%.1f z:%.1f", gyroData.gyroX, gyroData.gyroY, gyroData.gyroZ);
+        // Accumulate gyro data
+        accumulatedGyroX += (int) gyroData.gyroX * 0.01; // 0.1 seconds per sample
+        accumulatedGyroY += (int) gyroData.gyroY * 0.01;
+        accumulatedGyroZ += (int) gyroData.gyroZ * 0.01;
 
-        vTaskDelay(300 / portTICK_PERIOD_MS);
+        // Gyro values must be between 0 and 359
+        if (accumulatedGyroX >= 360)
+            accumulatedGyroX -= 360;
+        else if (accumulatedGyroX < 0)
+            accumulatedGyroX += 360;
+
+        sampleCount++;
+
+        // Every 100 samples (1 second), log and reset
+        if (sampleCount >= 100)
+        {
+            ESP_LOGI(TAG, "Angular Displacement - x:%.1f y:%.1f z:%.1f", accumulatedGyroX, accumulatedGyroY, accumulatedGyroZ);
+
+            // Reset for next second
+            sampleCount = 0;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
